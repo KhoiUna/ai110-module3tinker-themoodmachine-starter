@@ -23,6 +23,8 @@ POSITIVE_WORDS = [
     "chill",
     "relaxed",
     "amazing",
+    "proud",
+    "lol",
 ]
 
 NEGATIVE_WORDS = [
@@ -36,6 +38,7 @@ NEGATIVE_WORDS = [
     "stressed",
     "hate",
     "boring",
+    "monday",
 ]
 
 # ---------------------------------------------------------------------
