@@ -90,7 +90,14 @@ class MoodAnalyzer:
           - Give some words higher weights than others (for example "hate" < "annoyed")
           - Treat emojis or slang (":)", "lol", "💀") as strong signals
         """
+        positive_count, negative_count = self._count_sentiment(text)
+        return positive_count - negative_count
 
+    def _count_sentiment(self, text: str) -> Tuple[int, int]:
+        """
+        Return (positive_count, negative_count) for the text, after negation
+        has been applied (so "not bad" counts as one positive hit).
+        """
         # Enhancement: negation handling. A negator ("not", "never", "don't", ...)
         # flips the polarity of the next sentiment word, as long as that word
         # appears within negation_window tokens ("not happy", "not very happy").
@@ -99,7 +106,8 @@ class MoodAnalyzer:
         negation_window = 3
 
         tokens = self.preprocess(text)
-        score = 0
+        positive_count = 0
+        negative_count = 0
         tokens_since_negator: Optional[int] = None  # None = no active negation
 
         for token in tokens:
@@ -123,9 +131,12 @@ class MoodAnalyzer:
                 value = -value
                 tokens_since_negator = None  # negation is used up
 
-            score += value
+            if value > 0:
+                positive_count += 1
+            else:
+                negative_count += 1
 
-        return score
+        return positive_count, negative_count
 
     # ---------------------------------------------------------------------
     # Label prediction
@@ -152,7 +163,17 @@ class MoodAnalyzer:
         #   2. Return "positive" if the score is above 0.
         #   3. Return "negative" if the score is below 0.
         #   4. Return "neutral" otherwise.
-        pass
+        positive_count, negative_count = self._count_sentiment(text)
+        score = positive_count - negative_count
+
+        # Both moods present and roughly balanced -> "mixed".
+        if positive_count and negative_count and abs(score) <= 1:
+            return "mixed"
+        if score > 0:
+            return "positive"
+        if score < 0:
+            return "negative"
+        return "neutral"
 
     # ---------------------------------------------------------------------
     # Explanations (optional but recommended)
