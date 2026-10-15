@@ -90,15 +90,42 @@ class MoodAnalyzer:
           - Give some words higher weights than others (for example "hate" < "annoyed")
           - Treat emojis or slang (":)", "lol", "💀") as strong signals
         """
-        # TODO: Implement this method.
-        #   1. Call self.preprocess(text) to get tokens.
-        #   2. Loop over the tokens.
-        #   3. Increase the score for positive words, decrease for negative words.
-        #   4. Return the total score.
-        #
-        # Hint: if you implement negation, you may want to look at pairs of tokens,
-        # like ("not", "happy") or ("never", "fun").
-        pass
+
+        # Enhancement: negation handling. A negator ("not", "never", "don't", ...)
+        # flips the polarity of the next sentiment word, as long as that word
+        # appears within negation_window tokens ("not happy", "not very happy").
+        negators = {"not", "no", "never",
+                    "nothing", "nobody", "neither", "nor"}
+        negation_window = 3
+
+        tokens = self.preprocess(text)
+        score = 0
+        tokens_since_negator: Optional[int] = None  # None = no active negation
+
+        for token in tokens:
+            if token in negators or token.endswith(("n't", "n\u2019t")):
+                tokens_since_negator = 0
+                continue
+
+            if tokens_since_negator is not None:
+                tokens_since_negator += 1
+                if tokens_since_negator > negation_window:
+                    tokens_since_negator = None
+
+            if token in self.positive_words:
+                value = 1
+            elif token in self.negative_words:
+                value = -1
+            else:
+                continue
+
+            if tokens_since_negator is not None:
+                value = -value
+                tokens_since_negator = None  # negation is used up
+
+            score += value
+
+        return score
 
     # ---------------------------------------------------------------------
     # Label prediction
